@@ -15,7 +15,7 @@ class DetailsScreen extends StatelessWidget {
       body: Center(
         child: Text(
           label,
-          style: Theme.of(context).textTheme.headlineMedium,
+          style: const TextStyle(fontSize: 28),
           textAlign: TextAlign.center,
         ),
       ),
