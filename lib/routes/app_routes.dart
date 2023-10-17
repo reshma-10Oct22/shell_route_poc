@@ -9,20 +9,24 @@ import 'package:shell_router_poc/pages/login_screen.dart';
 import 'package:shell_router_poc/pages/scaffold_nav_bar.dart';
 import 'package:shell_router_poc/provider/listing_proivder.dart';
 import 'package:shell_router_poc/pages/settings_screen.dart';
+import 'package:shell_router_poc/bottom_bar_cntrl.dart';
 
 class AppRoutes {
   static GoRouter returnRouter(AuthProvider authProvider) {
-    final GlobalKey<NavigatorState> rootNavigatorKey =
-        GlobalKey<NavigatorState>(debugLabel: 'root');
-    final GlobalKey<NavigatorState> shellNavigatorKey =
-        GlobalKey<NavigatorState>(debugLabel: 'shell');
+    final rootNavigatorKey = GlobalKey<NavigatorState>();
+    final listingShellKey =
+        GlobalKey<NavigatorState>(debugLabel: 'listingShell');
+    final dashboardShellKey =
+        GlobalKey<NavigatorState>(debugLabel: 'dashboardShell');
+    final settingsShellKey =
+        GlobalKey<NavigatorState>(debugLabel: 'settingsShell');
 
     GoRouter router = GoRouter(
       navigatorKey: rootNavigatorKey,
       initialLocation: '/dashboard',
       errorBuilder: (context, state) {
         return const Scaffold(
-          body: Text("Error"),
+          body: Text("Error, Page not found"),
         );
       },
       redirect: (context, state) async {
@@ -37,82 +41,86 @@ class AppRoutes {
         return null;
       },
       refreshListenable: authProvider,
-      routes: [
+      routes: <RouteBase>[
         GoRoute(
           path: '/login',
-          pageBuilder: (context, state) {
-            return MaterialPage(
-              child: ChangeNotifierProvider(
-                create: (context) => AuthProvider(),
-                child: const LoginScreen(),
-              ),
+          builder: (context, state) {
+            return ChangeNotifierProvider(
+              create: (context) => AuthProvider(),
+              child: const LoginScreen(),
             );
           },
         ),
-        ShellRoute(
-          navigatorKey: shellNavigatorKey,
-          builder: (BuildContext context, GoRouterState state, Widget child) {
-            return ScaffoldWithNavBar(child: child);
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) {
+            return ScaffoldWithNavBar(
+              bottomBarCntrl: BottomBarCntrl(),
+              navigationShell: navigationShell,
+            );
           },
-          routes: <RouteBase>[
-            GoRoute(
-              path: '/listingScreen',
-              pageBuilder: (BuildContext context, GoRouterState state) {
-                return MaterialPage(
-                  child: ChangeNotifierProvider(
-                    create: (context) => ListProvider(),
-                    child: const ListingScreen(),
-                  ),
-                );
-              },
+          branches: <StatefulShellBranch>[
+            StatefulShellBranch(
+              navigatorKey: listingShellKey,
               routes: <RouteBase>[
                 GoRoute(
-                  parentNavigatorKey: rootNavigatorKey,
-                  path: 'details/:itemId',
-                  pageBuilder: (BuildContext context, GoRouterState state) {
-                    return MaterialPage(
-                      child: DetailsScreen(
-                        label: state.pathParameters["itemId"]!,
-                      ),
+                  path: '/listingScreen',
+                  builder: (BuildContext context, GoRouterState state) {
+                    return ChangeNotifierProvider(
+                      create: (context) => ListProvider(),
+                      child: const ListingScreen(),
                     );
                   },
+                  routes: <RouteBase>[
+                    GoRoute(
+                      path: 'details/:itemId',
+                      builder: (BuildContext context, GoRouterState state) {
+                        return DetailsScreen(
+                          label: state.pathParameters['itemId'] ??
+                              "Item id not found",
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-            GoRoute(
-              path: '/dashboard',
-              pageBuilder: (BuildContext context, GoRouterState state) {
-                return const MaterialPage(
-                  child: DashboardScreen(),
-                );
-              },
+            StatefulShellBranch(
+              navigatorKey: dashboardShellKey,
               routes: [
                 GoRoute(
-                  path: 'details',
-                  parentNavigatorKey: rootNavigatorKey,
-                  pageBuilder: (BuildContext context, GoRouterState state) {
-                    return const MaterialPage(
-                      child: DetailsScreen(label: 'Dashboard Detail Screen'),
-                    );
+                  path: '/dashboard',
+                  builder: (BuildContext context, GoRouterState state) {
+                    return const DashboardScreen();
                   },
+                  routes: [
+                    GoRoute(
+                      path: 'details',
+                      builder: (BuildContext context, GoRouterState state) {
+                        return const DetailsScreen(
+                            label: 'Dashboard Detail Screen');
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-            GoRoute(
-              path: '/settings',
-              pageBuilder: (BuildContext context, GoRouterState state) {
-                return const MaterialPage(
-                  child: SettingsScreen(),
-                );
-              },
-              routes: <RouteBase>[
+            StatefulShellBranch(
+              navigatorKey: settingsShellKey,
+              routes: [
                 GoRoute(
-                  path: 'details',
-                  pageBuilder: (BuildContext context, GoRouterState state) {
-                    return const MaterialPage(
-                      child: DetailsScreen(label: 'Setting Detail Screen'),
-                    );
+                  path: '/settings',
+                  builder: (BuildContext context, GoRouterState state) {
+                    return const SettingsScreen();
                   },
+                  routes: <RouteBase>[
+                    GoRoute(
+                      path: 'details',
+                      builder: (BuildContext context, GoRouterState state) {
+                        return const DetailsScreen(
+                            label: 'Setting Detail Screen');
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),

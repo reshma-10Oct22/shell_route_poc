@@ -1,63 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shell_router_poc/bottom_bar_cntrl.dart';
 
-class ScaffoldWithNavBar extends StatelessWidget {
-  final Widget child;
+class ScaffoldWithNavBar extends StatefulWidget {
+  final StatefulNavigationShell navigationShell;
+  final BottomBarCntrl bottomBarCntrl;
   const ScaffoldWithNavBar({
-    required this.child,
     super.key,
+    required this.navigationShell,
+    required this.bottomBarCntrl,
   });
+
+  @override
+  State<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
+}
+
+class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
+  List<BottomTabItem> _bottomTabItems = [];
+  @override
+  void initState() {
+    super.initState();
+    _bottomTabItems = widget.bottomBarCntrl.listOfBottomTab();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: child,
+      body: widget.navigationShell,
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Listing',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.business),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notification_important_rounded),
-            label: 'Settings',
-          ),
-        ],
-        currentIndex: _calculateSelectedIndex(context),
+        items: _buildBottomBar(),
+        currentIndex: widget.navigationShell.currentIndex,
         onTap: (int idx) => _onItemTapped(idx, context),
       ),
     );
   }
 
-  static int _calculateSelectedIndex(BuildContext context) {
-    final String location = GoRouterState.of(context).uri.toString();
-    if (location.startsWith('/listingScreen')) {
-      return 0;
-    }
-    if (location.startsWith('/dashboard')) {
-      return 1;
-    }
-    if (location.startsWith('/settings')) {
-      return 2;
-    }
-    return 0;
+  List<BottomNavigationBarItem> _buildBottomBar() {
+    return _bottomTabItems.map((e) {
+      return BottomNavigationBarItem(
+        icon: widget.bottomBarCntrl.getBottomTabIcon(e),
+        label: widget.bottomBarCntrl.getBottomTabLabel(e),
+      );
+    }).toList();
   }
 
   void _onItemTapped(int index, BuildContext context) {
-    switch (index) {
-      case 0:
-        GoRouter.of(context).go('/listingScreen');
-        break;
-      case 1:
-        GoRouter.of(context).go('/dashboard');
-        break;
-      case 2:
-        GoRouter.of(context).go('/settings');
-        break;
-    }
+    widget.navigationShell.goBranch(index,
+        initialLocation: index == widget.navigationShell.currentIndex);
   }
 }
